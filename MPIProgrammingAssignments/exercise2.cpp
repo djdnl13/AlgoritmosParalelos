@@ -5,7 +5,6 @@
 
 using namespace std;
 
-
 int main(int argc, char * argv[])
 {
 	double global_pi_estimate, local_pi_estimate, x, y, distance_squared;

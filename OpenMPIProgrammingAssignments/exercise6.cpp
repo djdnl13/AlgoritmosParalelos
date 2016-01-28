@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <omp.h>
+#include <fstream>
 
 const int MAX_LINES = 1000;
 const int MAX_LINE = 80;
@@ -17,8 +18,8 @@ int main(int argc, char* argv[]) {
    
    thread_count = strtol(argv[1], NULL, 10);
    
+   	 
    Get_text(lines, &line_count);
-
    
    Tokenize(lines, line_count, thread_count);
 
@@ -40,11 +41,14 @@ void Get_text(char* lines[], int* line_count_p) {
    int i = 0;
    char* fg_rv;
 
-   fg_rv = fgets(line, MAX_LINE, stdin);
+   ifstream myfile;
+   myfile.open("myfile.txt");
+
+   fg_rv = fgets(line, MAX_LINE, myfile);
    while (fg_rv != NULL) {
       lines[i++] = line;
       line = malloc(MAX_LINE*sizeof(char));
-      fg_rv = fgets(line, MAX_LINE, stdin);
+      fg_rv = fgets(line, MAX_LINE, myfile);
    }
    *line_count_p = i;
 }  /* Get_text */

@@ -2,8 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <omp.h>
+#include <iostream>
 
-const int MAX_LINES = 1000;
+using namespace std;
+
+const int MAX_LINES = 2;
 const int MAX_LINE = 80;
 
 void Get_text(char* lines[], int* line_count_p);
@@ -12,14 +15,14 @@ void Tokenize(char* lines[], int line_count, int thread_count);
 /*--------------------------------------------------------------------*/
 int main(int argc, char* argv[]) {
    int thread_count, i;
-   char* lines[1000];
+   char* lines[MAX_LINES];
    int line_count;
    
    thread_count = strtol(argv[1], NULL, 10);
    
    Get_text(lines, &line_count);
 
-   
+
    Tokenize(lines, line_count, thread_count);
 
    for (i = 0; i < line_count; i++)
@@ -36,14 +39,14 @@ int main(int argc, char* argv[]) {
  * Out args:  lines, line_count_p
  */
 void Get_text(char* lines[], int* line_count_p) {
-   char* line = malloc(MAX_LINE*sizeof(char));
+   char* line = new char[MAX_LINE];
    int i = 0;
    char* fg_rv;
 
    fg_rv = fgets(line, MAX_LINE, stdin);
    while (fg_rv != NULL) {
       lines[i++] = line;
-      line = malloc(MAX_LINE*sizeof(char));
+      char* line = new char[MAX_LINE];
       fg_rv = fgets(line, MAX_LINE, stdin);
    }
    *line_count_p = i;

@@ -1,86 +1,61 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <omp.h>
 #include <iostream>
+#include <fstream>
+#include <string.h>
+#include <queue>
+#include <omp.h>
 
 using namespace std;
 
-const int MAX_LINES = 2;
-const int MAX_LINE = 80;
+const int MAX_LINES = 10000;
+const int MAX_LINE = 1000;
 
-void Get_text(char* lines[], int* line_count_p);
-void Tokenize(char* lines[], int line_count, int thread_count); 
-
-/*--------------------------------------------------------------------*/
 int main(int argc, char* argv[]) {
-   int thread_count, i;
-   char* lines[MAX_LINES];
-   int line_count;
-   
-   thread_count = strtol(argv[1], NULL, 10);
-   
-   Get_text(lines, &line_count);
+	int thread_count;
+	char* lines[MAX_LINES];
+	int line_count;	
+	queue<string> shared_queue;
+	
+	int j,i = 0;
+	thread_count = strtol(argv[1], NULL, 10);
 
 
-   Tokenize(lines, line_count, thread_count);
+   #pragma omp parallel num_threads(thread_count) \
+	default(none) \
+	shared(shared_queue, thread_count, i)
+	for(i=0 ; i<thread_count ; ++i)
+	{
+		if(!(i&1))
+		{
+			ifstream myfile("myfile"+to_string(i/2)+".txt", ifstream::in);
+			char* line = new char[MAX_LINE];
+			myfile.getline(line, MAX_LINE);
+			while (!myfile.eof())
+			{
+				shared_queue.push(line);				
+				myfile.getline(line, MAX_LINE);
+			}
+		}
+		else
+		{	
+			while(!shared_queue.empty())				
+			{
+				char *my_token, *saveptr;
+				string line;
+				line = shared_queue.front();
+				shared_queue.pop();
+				printf("%s ", line);
+				char *cstr = new char[line.length()];
+				strcpy(cstr, line.c_str());
 
-   for (i = 0; i < line_count; i++)
-      if (lines[i] != NULL) free(lines[i]);
-
-   return 0;
-}  /* main */
-
-
-/*--------------------------------------------------------------------
- * Function:  Get_text
- * Purpose:   Read text and store as an array of strings, one per line
- *            of input text
- * Out args:  lines, line_count_p
- */
-void Get_text(char* lines[], int* line_count_p) {
-   char* line = new char[MAX_LINE];
-   int i = 0;
-   char* fg_rv;
-
-   fg_rv = fgets(line, MAX_LINE, stdin);
-   while (fg_rv != NULL) {
-      lines[i++] = line;
-      char* line = new char[MAX_LINE];
-      fg_rv = fgets(line, MAX_LINE, stdin);
-   }
-   *line_count_p = i;
-}  /* Get_text */
-
-/*-------------------------------------------------------------------
- * Function:    Tokenize
- * Purpose:     Tokenize lines of input
- * In args:     line_count, thread_count
- * In/out arg:  lines
- */
-void Tokenize(char* lines[], int line_count , int thread_count)
-{
-   int my_rank, i, j;
-   char *my_token, *saveptr;
-
-#  pragma omp parallel num_threads(thread_count) \
-      default(none) private(my_rank, i, j, my_token, saveptr) \
-      shared(lines, line_count)
-   {
-      my_rank = omp_get_thread_num();
-#     pragma omp for schedule(static, 1)
-      for (i = 0; i < line_count; i++) {
-         printf("Thread %d > line %d = %s", my_rank, i, lines[i]);
-         j = 0; 
-         my_token = strtok_r(lines[i], " \t\n", &saveptr);
-         while ( my_token != NULL ) {
-            printf("Thread %d > token %d = %s\n", my_rank, j, my_token);
-            my_token = strtok_r(NULL, " \t\n", &saveptr);
-            j++;
-         } 
-      if (lines[i] != NULL) 
-         printf("Thread %d > After tokenizing, my line = %s\n",
-            my_rank, lines[i]);
-      }
-   }
+				my_token = strtok_r(cstr, " \t\n", &saveptr);
+				while ( my_token != NULL )
+				{
+					printf("%s, ", &my_token);
+					my_token = strtok_r(NULL, " \t\n", &saveptr);
+				} 
+				printf("\n");
+			}
+		}
+	}
+	return 0;
 }

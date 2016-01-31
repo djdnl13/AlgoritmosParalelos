@@ -1,0 +1,15 @@
+3.3
+	Use directives __global__, __....___, ___....___
+3.4
+
+3.5
+	(C) i = blockIdx.x*blockDim.x + threadIdx.x;
+3.6
+	(A) i = blockIdx.xblockDim.x + threadIdx.x + 2;
+3.7
+	(C) 2048
+
+4.1
+	(C) 512 threads per block
+4.2
+	(C) 2048

@@ -1,99 +1,72 @@
 #include <iostream>
 
+typedef int t_number;
+
 using namespace std;
 
-	// B
-__global__ void kerner_matrix_addition(float** A, float** B, float** C, int n)
+__global__ void Matrix_Addition(t_number * dev_a , t_number * dev_b , t_number * dev_c, size_t n)
 {
-	int i = threadIdx.x;
-	int j = threadIdx.y;
+     size_t tid = blockIdx.x*blockDim.x + threadIdx.x;
 
-	if(i<n and j<n)
-		A[i][j] = B[i][j] + C[i][j];
+     if (tid < n*n)
+         dev_c[tid] = dev_a[tid] + dev_b[tid];
 }
 
-	// C
-__global__ void kerner_matrix_addition_row(float** A, float** B, float** C, int n)
+__global__ void Matrix_Addition_Row(t_number * dev_a , t_number * dev_b , t_number * dev_c, size_t n)
 {
-	int i = threadIdx.x;
-
-	for(int j=0 ; j<n ; ++j)
-		A[i][j] = B[i][j] + C[i][j];
+    size_t tid = blockIdx.x*blockDim.x + threadIdx.x;
+    for(size_t i=0 ; i<n ; ++i)
+         dev_c[tid+i] = dev_a[tid+i] + dev_b[tid+i];
 }
 
-	// D
-__global__ void kerner_matrix_addition_column(float** A, float** B, float** C, int n)
+__global__ void Matrix_Addition_Column(t_number * dev_a , t_number * dev_b , t_number * dev_c, size_t n)
 {
-	int j = threadIdx.y;
-
-	for(int i=0 ; i<n ; ++i)
-		A[i][j] = B[i][j] + C[i][j];
-}
-
-void vecAdd(float ** A, float ** B, float ** C, int n)
-{
-	int size = n*n*sizeof(float);
-	float **d_A, **d_B, **d_C;		
-
-	cudaMalloc((void **) &d_B, size);
-	cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
-
-	cudaMalloc((void **) &d_C, size);
-	cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice);
-
-	cudaMalloc((void **) &d_A, size);
-
-	//vecAddKernel<<<ceil(n/256.0), 256>>>(d_A, d_B, d_C, n);
-	//dim3 threadsPerBlock(n, n);
-
-	// Kernel invocation code
-	kerner_matrix_addition<<<(1,1), (n,n)>>>(d_A, d_B, d_C, n);
-	
-	/*kerner_matrix_addition_row<<<1, (n,1)>>>(d_A, d_B, d_C, n);
-	kerner_matrix_addition_column<<<1, (1,n)>>>(d_A, d_B, d_C, n);
-	*/
-
-	cudaMemcpy(A, d_A, size, cudaMemcpyDeviceToHost);
-
- 		// Free device memory for A, B, C
-	cudaFree(d_A); cudaFree(d_B); cudaFree (d_C);
+    size_t tid = blockIdx.x*blockDim.x + threadIdx.x;
+    for(size_t i=0 ; i<n ; ++i)
+         dev_c[tid+i*n] = dev_a[tid+i*n] + dev_b[tid+i*n];
 }
 
 int main()
 {
-	float ** A, ** B, ** C;
-	int n = 256;
-	
-	A = new float * [n];
-	B = new float * [n];
-	C = new float * [n];
+      t_number * Host_a, * Host_b, * Host_c;
+      t_number * dev_a , * dev_b, * dev_c ;
+      size_t n = 10;
+      t_number size = n*n;
 
-	for(size_t i=0 ; i<n ; i++)
-	{
-		A[i] = new float[n];
-		B[i] = new float[n];
-		C[i] = new float[n];
+      cudaMalloc((void **)&dev_a , size*sizeof(t_number));
+      cudaMalloc((void **)&dev_b , size*sizeof(t_number));
+      cudaMalloc((void **)&dev_c , size*sizeof(t_number));
 
-		for(size_t j=0 ; j<n ; j++)
-		{
-			A[i][j] = 1;
-			B[i][j] = 2;
-			C[i][j] = 0;
-		}
-	}
+      Host_a = new t_number[size];
+      Host_b = new t_number[size];
+      Host_c = new t_number[size];
 
-	vecAdd(A, B, C, n);
+      for (size_t i = 0; i<size ; ++i)
+      {
+            Host_a[i] = i ;
+            Host_b[i] = i*2 ;
+      }
 
-	for(size_t i=0 ; i<n ; i++)
-	{
-		for(size_t j=0 ; j<n ; j++)
-		{
-			cout << A[i][j] << " ";
-		}
-		cout << endl;		
-	}
+      cudaMemcpy(dev_a , Host_a , size*sizeof(t_number) , cudaMemcpyHostToDevice);
+      cudaMemcpy(dev_b , Host_b , size*sizeof(t_number) , cudaMemcpyHostToDevice);
 
+//      Matrix_Addition<<<N, N>>>(dev_a , dev_b , dev_c, n);
+//      Matrix_Addition_Row<<<n, 1>>>(dev_a , dev_b , dev_c, n);
+      Matrix_Addition_Column<<<1, n>>>(dev_a , dev_b , dev_c, n);
 
+      cudaMemcpy(Host_c , dev_c , size*sizeof(t_number) , cudaMemcpyDeviceToHost);
 
-	return 0;
+      for(size_t i=0 ; i<size ; ++i)
+      {
+          if(i%n == 0)
+             cout << endl;
+          cout << Host_c[i] << " " ;          
+      }
+      cout << endl;
+
+      cudaFree(dev_a) ;
+      cudaFree(dev_b) ;
+      cudaFree(dev_c) ;
+
+      return 0 ;
 }

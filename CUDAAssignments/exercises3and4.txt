@@ -13,3 +13,21 @@
 	(C) 512 threads per block
 4.2
 	(C) 2048
+4.3
+	
+4.4 
+	32x32
+	400/32 =  13
+	900/32 = 29
+4.5
+	16 y 28.
+4.6
+	Sum = 19.9
+	W = 3*8 = 24
+	24-19.9 = 4.1
+	% = 20,6%
+4.8
+	Not a good idea.
+4.9
+	32x32 = 1024 threads
+	But only allows up 512 threads

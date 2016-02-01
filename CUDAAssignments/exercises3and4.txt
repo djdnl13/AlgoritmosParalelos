@@ -1,33 +1,59 @@
+3.1.e
+	La implementación en (a) es óptima, debido a que cada thread hace la suma de un par de elementos, pero si el tamaño de la matriz es mayor al número de threads del device habría una limitación.
+	La implementación en (b) y (c) hace más operaciones por thread, aunque simplifica la cantidad de threads, lo cual podría ser una buena opción dependiendo de la naturaleza del problema. 
 3.3
-	Use directives __global__, __....___, ___....___
-3.4
-
+	Usar directivas __global__, __host__, __device__. Para usar funciones executar o llamar a funciones en cada parte respectivamente
 3.5
 	(C) i = blockIdx.x*blockDim.x + threadIdx.x;
+	
+	// Se obtiene la posición del elemento a operar, obteniendo el id del bloque por la dimensión del mismo y aumentándole el id del thread del bloque actual.
+
 3.6
 	(A) i = blockIdx.xblockDim.x + threadIdx.x + 2;
+	Se obtiene el id del segundo elemento adyacente. Se debe controlar el indice con el tamaño del arreglo en la funcion kernel
+	
 3.7
 	(C) 2048
+	Thread block 512 threds, con 4 bloques : 4*512 = 2048. 2000 < 2048.
 
 4.1
 	(C) 512 threads per block
+	Se usaría 3 bloques de 512 threads por thread : 3*512 = 1536.
+	En cualquier otro caso, se generá un menor cantidad de números de threads.	
+
 4.2
 	(C) 2048
+	Ver respuesta 3.7.	
 4.3
+	(A) 1 warp
 	
 4.4 
-	32x32
-	400/32 =  13
-	900/32 = 29
+	Compute Capability 3.0 acepta hasta 1024 threads en un bloque.
+	Teniendo bloques de dimensiones de 32x32 = 1024 threads
+	ceil(400/32) =  13
+	ceil(900/32) = 29
+
+	Y con un grid de dimensiones de 13x29.
 4.5
-	16 y 28.
+	= 32*16*29 + 32*28*13 - 16*28
+	= 26048 
 4.6
 	Sum = 19.9
 	W = 3*8 = 24
 	24-19.9 = 4.1
 	% = 20,6%
+4.7
+	(A), (B), (C), y (F) son asignamientos posibles.
+	(D) y (E) no son posibles debido a que compute capability 1.0 y 1.2 solo aceptan hasta 8 bloques por multiprocesador
 4.8
-	Not a good idea.
+	No es una buena idea, si la sincronización es necesaria, no se debe de omitir, debido a que se puede generar inconsistencias en el SM, 
+	teniendo threads no sincronizados en wards sobre futuras ejecuciones de SM.
+	
 4.9
-	32x32 = 1024 threads
-	But only allows up 512 threads
+	bloques de dimensión 32x32 = 1024 threads
+	El CUDA device solo acepta hasta 512 threads por bloque, lo cual con dimensión de 32x32 no sería posible.
+4.10
+	En el cálculo de los indices, no es bueno usar BLOCK_SIZE, en vez de eso usar blockDim.x o blockDim.y según corresponda. 
+	
+
+

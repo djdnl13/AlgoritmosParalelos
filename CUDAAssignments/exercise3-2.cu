@@ -1,34 +1,56 @@
-	__global__ void kerner_matrix_addition(float * A, float ** B, float* C, int n)
+#include <iostream>
+
+typedef int t_number;
+
+using namespace std;
+
+__global__ void Matrix_Vector_Multiplication(t_number * dev_a , t_number * dev_b , t_number * dev_c, size_t n)
+{
+	size_t tid = blockIdx.x*blockDim.x + threadIdx.x;
+
+	if(tid < n)
 	{
-		int i = threadIdx.x;
-
-		if(i>=n)
-			return;
-
-		A[i] = 0;
-		for(size_t j=0; j<n ; ++j)
-			A[i] += B[i][j] * C[i];
+		dev_a[tid] = 0;
+		for(size_t i=0 ; i<n ; ++i)
+			dev_a[tid] += dev_b[n*i+tid] * dev_c[i];
 	}
+}
 
-	void vecAdd(float * A, float ** B, float * C, int n)
-	{
-		int size_vector = n*sizeof(float);
-		int size_matrix = n*n*sizeof(float);
-		float **d_A, **d_B, **d_C;
+int main()
+{
+	size_t n = 10;
+	size_t size_vector = n;
+	size_t size_matrix = n*n;
+	t_number * host_a, * host_b, * host_c;
+	t_number * dev_a, * dev_b, * dev_c;
 
-		cudaMalloc((void **) &d_B, size_matrix);
-		cudaMemcpy(d_A, A, size_matrix, cudaMemcpyHostToDevice);
+	
+	host_a = new t_number[size_vector];
+	host_b = new t_number[size_matrix];
+	host_c = new t_number[size_vector];
+	
+	for(size_t i=0; i<size_vector ; ++i)
+		host_c[i] = 1 ;
 
-		cudaMalloc((void **) &B_C, size_vector);
-		cudaMemcpy(d_B, B, size_vector, cudaMemcpyHostToDevice);
+	for(size_t i=0 ; i<size_matrix ; ++i)
+		host_b[i] = 1;
 
-		cudaMalloc((void **) &d_A, size_vector);
+	cudaMalloc((void **)&dev_a , size_vector*sizeof(t_number));
+	cudaMalloc((void **)&dev_b , size_matrix*sizeof(t_number));
+	cudaMalloc((void **)&dev_c , size_vector*sizeof(t_number));
+
+	cudaMemcpy(dev_b, host_b, size_matrix*sizeof(t_number), cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_c, host_c, size_vector*sizeof(t_number), cudaMemcpyHostToDevice);
 		
-		//vecAddKernel<<<ceil(n/256.0), 256>>>(d_A, d_B, d_C, n);		
-		kerner_matrix_addition<<<1, n>>>(d_A, d_B, d_C, n, m);		
+	Matrix_Vector_Multiplication<<<1, n>>>(dev_a, dev_b, dev_c, n);
 
-		cudaMemcpy(A, d_A, size_vector, cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_a, dev_a, size_vector*sizeof(t_number), cudaMemcpyDeviceToHost);
 
- 		// Free device memory for A, B, C
-		cudaFree(d_A); cudaFree(d_B); cudaFree (d_C);
-	}
+	for(size_t i=0; i<size_vector ; ++i)
+		cout << host_a[i] << " ";
+	cout << endl;
+	cudaFree(dev_a);
+	cudaFree(dev_b);
+	cudaFree(dev_c);
+	return 0;
+}
